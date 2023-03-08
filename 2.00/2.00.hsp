@@ -1,0 +1,148 @@
+;Preship Browser
+#define DIID_DWebBrowserEvents2 "{34A715A0-6587-11D0-924A-0020AFC7AC4D}"
+#define DISPID_NAVIGATECOMPLETE2 252
+onexit *browserexit
+goto *boot
+
+*boot
+Window_Size_x=1000
+Window_Size_y=700
+pos_x = (ginfo_dispx - Window_Size_x) / 2
+pos_y = (ginfo_dispy - Window_Size_y) / 2
+screen 0, Window_Size_x, Window_Size_y, 0, pos_x, pos_y
+browsername= "PreshipBrowser"
+version="2.00"
+cls 1
+sdim url,512
+url="https://duckduckgo.com/"
+goto *reserve
+
+*reserve
+cls
+title browsername + " : Version" + version + " 処理中"
+objsize Window_Size_x
+pos 0,0:input url
+objsize 100,24
+pos 0,24:button "ホーム",*home
+pos 100,24:button "Back",*go_b
+pos 200,24:button "Navigate/Reload",*wow
+pos 300,24:button "Go",*go_f
+pos 400,24:button "Size+",*size_plus
+pos 500,24:button "Size-",*size_minus
+pos 600,24:button "ローカルファイル",*fileopen
+pos 700,24:button "About",*about
+pos 800,24:button "終了",*browserexit
+pos 0,48
+axobj ie, "Shell.Explorer.2",Window_Size_x,Window_Size_y-48
+num=stat
+comevent ie_event, ie, "{34A715A0-6587-11D0-924A-0020AFC7AC4D}",*event
+ie->"Navigate" url
+*main
+stop
+
+*home
+goto *boot
+
+*event
+dispid = comevdisp(ie_event)
+if dispid = DISPID_NAVIGATECOMPLETE2 : gosub *OnNavigateComplete2
+return
+
+*OnNavigateComplete2
+name = ie("LocationURL")
+objprm 0,name
+pDoc = ie("Document")
+name = pDoc("Title")
+title browsername + " : Version" + version + " : サイトメッセージ は 「" + name + "」"
+delcom pDoc
+return
+
+*wow
+if url = "about" {
+dialog "about:〇〇と入力して、独自のスマートな情報を出力。\n詳しくは「about:help」と入力。"
+goto *main}
+
+if url = "about:help" {
+dialog "about:help = これ"
+dialog "about:blank = 空白ページ"
+dialog "about:version = バージョン情報"
+dialog "about:google = Googleを開く"
+dialog "about:yahoo = Yahooを開く"
+dialog "about:web = 当ブラウザの公式ページを開く"
+dialog "about:exit = 終了"
+dialog "about:home = 最初のページを開く"
+goto *main}
+
+if url = "about:blank" {
+dialog "about:blank"
+goto *main}
+
+if url = "about:version" {
+dialog version
+goto *main}
+
+if url = "about:google" {
+ie->"Navigate" "https://www.google.com/"
+goto *main}
+
+if url = "about:yahoo" {
+ie->"Navigate" "https://www.yahoo.co.jp/"
+goto *main}
+
+if url = "about:web" {
+ie->"Navigate" "https://preship.github.io/dl.html"
+goto *main}
+
+if url = "about:exit" {
+goto *browserexit}
+
+if url = "about:home" {
+goto *boot}
+
+ie->"Navigate" url
+goto *main
+
+*go_f
+ie->"GoForward"
+goto *reserve
+
+*go_b
+ie->"GoBack"
+goto *reserve
+
+*size_plus
+if Window_Size_x = "1420" {dialog "これ以上大きくすることはできません" : goto *reserve}
+Window_Size_x=Window_Size_x + 70
+Window_Size_y=Window_Size_y + 35
+clrobj
+screen 0,Window_Size_x,Window_Size_y
+goto *reserve
+
+*size_minus
+if Window_Size_y = "665" {dialog "これ以上小さくすることはできません" : goto *reserve}
+Window_Size_x=Window_Size_x - 70
+Window_Size_y=Window_Size_y - 35
+clrobj
+screen 0,Window_Size_x,Window_Size_y
+goto *reserve
+
+*fileopen
+dialog "*",16,"*"
+if stat = "0" {dialog "失敗" : goto *reserve}
+ie->"Navigate" refstr
+goto *main
+
+*about
+dialog browsername + "\nVersion " + version + "\nMade by EstraDium\n\nNavigate URL \n\n[" + url + "]\n\n\n「はい」を押して公式ホームページを開く",2
+if stat = "6" {ie->"Navigate" "https://preship.github.io/dl.html"}
+goto *main
+
+*browserexit
+dialog "ブラウザを終了しますか",2
+if stat = "6"{
+title "終了中"
+clrobj
+cls
+end
+}
+goto *main
